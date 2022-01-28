@@ -1,0 +1,46 @@
+#!/bin/bash
+#SBATCH --job-name=count_seqs
+#SBATCH --out=count_seqs-%j.out
+#SBATCH --ntasks=1
+#SBATCH --mem=16G
+#SBATCH --partition=dhvi
+#SBATCH --ntasks-per-node=1
+
+> DH270_briney_table.txt
+> DH270_briney_table_raw.txt
+
+threshold=-0.2
+
+for file in $(ls *.aa | grep -v "consensus")
+do
+    matrix=~/seq_scoring/DH270_logfoldChange.txt
+    cut -f 2 ${file} | sort | uniq | grep -v "X" | grep -v "*" > tmp
+    sed "s|^|randomseqnamehere\t|" tmp > ${file/aa/fasta}
+    python3 create_table.py ${matrix} ${file/aa/fasta} ${threshold} >> DH270_briney_table.txt
+    python3 create_table_raw.py ${matrix} ${file/aa/fasta} ${threshold} >> DH270_briney_table_raw.txt
+done
+
+> CH235_briney_table_all.txt
+> CH235_briney_table_all_raw.txt
+
+for file in $(ls *.aa | grep -v "consensus")
+do
+    matrix=/hpc/home/jsm56/seq_scoring/CH235_logfoldChange_all_AA.txt
+    cut -f 2 ${file} | sort | uniq | grep -v "X" | grep -v "*" > tmp
+    sed "s|^|randomseqnamehere\t|" tmp > ${file/aa/fasta}
+    python3 create_table.py ${matrix} ${file/aa/fasta} ${threshold} >> CH235_briney_table_all.txt
+    python3 create_table_raw.py ${matrix} ${file/aa/fasta} ${threshold} >> CH235_briney_table_all_raw.txt
+done
+
+> CH235_briney_table_AR.txt
+> CH235_briney_table_AR_raw.txt
+
+for file in $(ls *.aa | grep -v "consensus")
+do
+    matrix=/hpc/home/jsm56/seq_scoring/CH235_logfoldChange_AR.txt
+    cut -f 2 ${file} | sort | uniq | grep -v "X" | grep -v "*" > tmp
+    sed "s|^|randomseqnamehere\t|" tmp > ${file/aa/fasta}
+    python3 create_table.py ${matrix} ${file/aa/fasta} ${threshold} >> CH235_briney_table_AR.txt
+    python3 create_table_raw.py ${matrix} ${file/aa/fasta} ${threshold} >> CH235_briney_table_AR_raw.txt
+
+done

@@ -1,0 +1,62 @@
+#!/bin/bash
+#SBATCH --job-name=igor_runs
+#SBATCH --ntasks=1
+#SBATCH --error=igorcollect-%j.err
+#SBATCH --out=igorcollect-%j.out
+#SBATCH --mem=128G
+#SBATCH --partition=dhvi
+#SBATCH --ntasks-per-node=1
+
+module load Python/2.7.11
+module load R/3.6.0
+
+gunzip /datacommons/dhvi/Generated_cdr3_seqs/seq_w_D.txt.gz
+
+for file in cdr*
+do
+	tail -n 1 -q ${file} >> /datacommons/dhvi/Generated_cdr3_seqs/distance_counts.txt
+	cat seq_wo_${file} >> /datacommons/dhvi/Generated_cdr3_seqs/seq_wo_D.txt
+	cat seq_wd_${file} >> /datacommons/dhvi/Generated_cdr3_seqs/seq_w_D.txt
+	rm ${file} seq_w[od]_${file}
+done
+
+cd /datacommons/dhvi/Generated_cdr3_seqs/
+
+date > outdata.txt
+wc -l seq_w_D.txt | cut -f 1 -d " " > linecount
+sort seq_w_D.txt|uniq | wc -l |cut -f 1 -d " " > uniqlinecount
+
+Rscript parse_data.R >> outdata.txt
+
+cut -f 1 seq_w_D.txt | shuf -n 100000 | sed "s|^|>seq\n|" > tmpD.fasta
+#Rscript /datacommons/dhvi/scripts/R/scripts/seqlogo.R tmpD.fasta seqlogo_with_D.pdf
+weblogo -f tmpD.fasta -A protein --errorbars NO  -o seqlogo_with_D.eps -F eps -U probability -s large
+rm tmpD.fasta
+
+cut -f 1 seq_wo_D.txt | shuf -n 100000 | sed "s|^|>seq\n|"> tmpWOD.fasta
+weblogo -f tmpWOD.fasta --errorbars NO  -o seqlogo_without_D.eps -F eps -U probability -s large
+#Rscript /datacommons/dhvi/scripts/R/scripts/seqlogo.R tmpWOD.fasta seqlogo_without_D.pdf
+rm tmpWOD.fasta
+
+for i in $(seq 4 -1 0)
+do
+ grep -w "D=${i}" seq_w_D.txt | cut -f 1 | shuf -n 100000 | sed "s|^|>seq\n|" > D${i}tmp.fasta
+ #Rscript /datacommons/dhvi/scripts/R/scripts/seqlogo.R D${i}.fasta D_${i}.pdf
+ weblogo -f D${i}tmp.fasta -A protein --errorbars NO  -o D_${i}.eps -F eps -U probability -s large
+ grep -w "D=${i}" seq_w_D.txt | cut -f 1 | sed "s|^|>seq\n|" > D${i}.fasta
+ rm D${i}tmp.fasta
+done
+
+rm -f simulation_withD_matrix.txt
+python2.7 ~/findCDR/Create_seq_table.py simulation_withD_matrix.txt seq_w_D.txt
+
+#rm -f simulation_withoutD_matrix.txt
+python2.7 ~/findCDR/Create_seq_table.py simulation_withoutD_matrix.txt seq_wo_D.txt
+rm seq_wo_D.txt
+
+
+cut -f 1 /datacommons/dhvi/Generated_cdr3_seqs/seq_w_D.txt | sed "s|^|>seqxxx\n|g" > AAtmp.fasta
+~/findCDR/findCDR -i AAtmp.fasta -o ~/recalc_logo.txt -s ~/findCDR/seq_logo.txt -aa
+rm AAtmp.fasta
+
+gzip seq_w_D.txt

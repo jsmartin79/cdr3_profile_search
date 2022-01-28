@@ -1,0 +1,25 @@
+#!/bin/bash
+#SBATCH --job-name=SeqScoring
+#SBATCH --out=SeqScoring-%j.out
+#SBATCH --ntasks=1
+#SBATCH --mem=10G
+#SBATCH --partition=dhvi
+#SBATCH --ntasks-per-node=1
+######SBATCH --exclude=dcc-dhvi-0[4-6]
+
+date
+basefile=Briney_CDR3.txt
+#grep -v "*" ${basefile} | grep -v "X" | sort | uniq > ${basefile/.txt/.FU.txt}
+
+#python3 ~/seq_scoring/seq_distance_calculations.py  ${basefile/.txt/.FU.txt} ~/seq_scoring/DH270_logfoldChange.txt
+
+#cp ${basefile/.txt/.FU.txt} ${basefile/.txt/.FU.V2.txt}
+#python3 ~/seq_scoring/seq_distance_calculations.py  ${basefile/.txt/.FU.V2.txt} ~/seq_scoring/DH270_logfoldChangeV2.txt
+
+#grep -E '^.{9}YDSS' ${basefile/.txt/.FU.V2.txt}.dist > ${basefile/.txt/.FUD.V2.txt}
+
+python3 ~/seq_scoring/Plot_histogram.py ${basefile/.txt/.FUD.V2.txt} ${basefile/.txt/.FUD.V2.pdf}
+
+
+date
+echo "Done"

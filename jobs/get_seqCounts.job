@@ -1,0 +1,19 @@
+#!/bin/bash
+#SBATCH --job-name=count_seqs
+#SBATCH --out=count_seqs-%j.out
+#SBATCH --ntasks=1
+#SBATCH --mem=16G
+#SBATCH --partition=dhvi
+#SBATCH --ntasks-per-node=1
+#SBATCH --exclude=dcc-dhvi-[07-09,10-11]
+
+
+for file in $(ls *.aa | grep -v "consensus")
+do
+
+    matrix=/hpc/home/jsm56/seq_scoring/DH270_logfoldChange.txt
+    cut -f 2 ${file} | sort | uniq | grep -v "X" | grep -v "*" > tmp
+    echo ${file} $(wc -l tmp)   
+
+
+done

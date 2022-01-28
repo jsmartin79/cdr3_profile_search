@@ -1,0 +1,25 @@
+#!/bin/bash
+#SBATCH --job-name=igor_runs
+#SBATCH --ntasks=1
+#SBATCH --error=igor-%j.err
+#SBATCH --mem=5G
+#SBATCH --partition=dhvi
+#SBATCH --ntasks-per-node=1
+#SBATCH --exclude=dcc-dhvi-[01]
+
+if (( $# < 2 )); then
+	numbSeq=50000000
+else
+	numbSeq=${2}
+fi
+
+
+date
+igor  -batch seq${1} -generate ${numbSeq} --name xset$1 -set_wd /work/jsmb/xseq -chain heavy_naive -species human -set_genomic --V /work/jsmb/database/V.fasta -set_genomic --J /work/jsmb/database/J.fasta -set_genomic --D /work/jsmb/database/D.fasta -set_custom_model /dscrhome/sv177/igor_1-3-0/models/human/bcr_heavy/models/model_parms.txt /dscrhome/sv177/igor_1-3-0/models/human/bcr_heavy/models/model_marginals.txt
+
+#dir=/work/jsmb/xseq/seq${1}_generated
+#marker=$(head /dev/urandom | tr -dc A-Z0-9 |head -c 4;echo '')
+#sed "s|^|>seq${marker}-|" ${dir}/xset${1}_generated_seqs_noerr.csv | cut -f 1,2 -d "," | tr ";" "\n" > full_seqs_${1}.fasta
+#rm -r ${dir}
+
+date

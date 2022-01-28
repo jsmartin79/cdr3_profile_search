@@ -1,0 +1,12 @@
+#!/bin/bash
+#SBATCH --job-name=countCDR
+#SBATCH --ntasks=1
+#SBATCH --error=slurm-%j.err
+#SBATCH --mem=25G
+#SBATCH --partition=dhvi
+#SBATCH --ntasks-per-node=1
+#SBATCH --exclude=dcc-dhvi-[01-03]
+
+gunzip -d ${1}
+~/findCDR/findCDR -i ${1/.gz/} -o ${1/fasta.gz/txt} -s ~/findCDR/DH270_logo.txt -aa
+gzip ${1/.gz/}

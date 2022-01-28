@@ -1,0 +1,28 @@
+#!/bin/bash
+#SBATCH --job-name=count
+#SBATCH --out count-%j.out
+#SBATCH --ntasks=1
+#SBATCH --mem=50G
+#SBATCH --partition=dhvi
+#SBATCH --ntasks-per-node=1
+
+
+
+filename=GS_immunogen_counts.txt
+#cat x0*.split.dist > ${file}
+
+for i in $(seq 2 17)
+do
+    rm -rf /tmp/*
+#i=$1
+    echo "column position" ${i}
+
+    cut -f ${i} ${filename} | sort | uniq -c > counts_${i}.txt
+    sort -k2 -n counts_${i}.txt > tmp
+    mv tmp counts_${i}.txt
+done
+
+cp counts_16.txt "counts_for_-0.2.txt"
+
+#rm SeqScoring-*.out
+#rm x00*.split.gz

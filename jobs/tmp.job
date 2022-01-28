@@ -1,0 +1,33 @@
+#!/bin/bash
+#SBATCH --ntasks=1
+#SBATCH --error=slurm-%j.err
+#SBATCH --mem=8G
+#SBATCH --partition=dhvi
+#SBATCH --ntasks-per-node=1
+#####SBATCH --exclude=dcc-dhvi-[01-03]
+
+#if (( $# < 2 )); then
+#	numbSeq=750000000
+#else
+#	numbSeq=${2}
+#fi
+
+
+
+#for file in $(find . -iname "xset*generated_seqs_noerr.csv"); 
+#do 
+#echo ${file}; 
+#marker=$(head /dev/urandom | tr -dc A-Z0-9 |head -c 4;echo '')
+#sed "s|^|>seq${marker}-|" ${file} | cut -f 1,2 -d "," | tr ";" "\n" >> full_seqs.fasta; 
+#done
+
+date
+wc -l full_seqs.fasta
+date
+split -a 4 --additional-suffix=".fasta" -d -l 2000000 full_seqs.fasta
+date
+wc -l x*.fasta
+date
+
+head -n 5000000000 full_seqs.fasta > tmp;
+mv tmp full_seqs.fasta

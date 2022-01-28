@@ -1,0 +1,11 @@
+#!/bin/bash
+#SBATCH --job-name=runcalc
+#SBATCH --out=runcalc-%j.out
+#SBATCH --ntasks=1
+#SBATCH --mem=65G
+#SBATCH --partition=dhvi
+#SBATCH --ntasks-per-node=1
+
+date
+
+python3 /datacommons/dhvi/scripts/Python/calc_P_of_AA.py -l Briney_CDR3.FU.20.txt  -m ~/seq_scoring/GS_logfoldchange_matrix.fixed.txt -o GS_AA_probability_Briney.txt -t -0.2 -p

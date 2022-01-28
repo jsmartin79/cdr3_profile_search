@@ -1,0 +1,13 @@
+#!/bin/bash
+#SBATCH --job-name=Creathist
+#SBATCH --out=SeqScoring-%j.out
+#SBATCH --ntasks=1
+#SBATCH --mem=65G
+#SBATCH --partition=dhvi
+#SBATCH --ntasks-per-node=1
+
+date
+echo ${1}
+python3 ~/seq_scoring/Plot_histogram.py ${1} ${2}
+date
+echo "Done"
