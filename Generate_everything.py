@@ -22,14 +22,14 @@ if sys.version_info < MIN_PYTHON:
 class SeqDistCalc():
     def __init__(self,filename,matrixfile):
         count=0
-        matrix=read_Matrix(matrixfile)
+        matrix=self.read_Matrix(matrixfile)
         if filename[-2:]=="gz":
-            self.processGZfile(filename,matrix)
-            return filename.replace(".gz",".dist")
+            self.distfile=filename.replace(".gz",".dist")
+            self.processGZfile(filename,matrix,self.distfile)
         else:
-            self.processTXTfile(filename,matrix)
-            return filename+".dist"
-
+            self.distfile=filename+".dist"
+            self.processTXTfile(filename,matrix,self.distfile)
+        return
     def read_Matrix(self,matrix_file):
         scoring_matrix=dict()
         with open(matrix_file,"rb") as f:
@@ -47,46 +47,43 @@ class SeqDistCalc():
         return scoring_matrix
     def score_Seq(self,seq,matrix):
         all_dist=[]
-        #print(seq)
         #for cutoff in [x/4.0 for x in range(-12,9)]:
         for cutoff in [x/5.0 for x in range(-15,1)]:
             dist=20
             for i,nt in enumerate(seq):
-                #print("{}-{}".format(i,nt))
                 if float(matrix[nt][i])>float(cutoff):
                     dist-=1
             all_dist.append(dist)
         distance="\t".join(["{}".format(i) for i in all_dist])
         return distance
-    def processGZfile(filename,matrix):
-        with open(filename.replace(".gz",".dist"),'w') as out:
+    def processGZfile(self,filename,matrix,outname):
+        with open(outname,'w') as out:
             with gzip.open(filename, 'rb') as f:
                 while True:
                     line=f.readline()
                     if not line:
                         break
                     seq,Dvalue=line.rstrip().split()
-                    score=score_Seq(seq.decode("utf-8")[1:21],matrix)
+                    score=self.score_Seq(seq.decode("utf-8")[1:21],matrix)
                     out.write("{}\t{}\n".format(seq.decode("utf-8"),score))
 
-    def processTXTfile(filename,matrix):
-        with open(filename+".dist",'w') as out:
+    def processTXTfile(self,filename,matrix,outname):
+        with open(outname,'w') as out:
             with open(filename, "r") as f:
                 while True:
                     line=f.readline()
                     if not line:
                         break
                     seq=line.rstrip()
-                    #print("{}-length:{}".format(seq,len(seq)))
                     if len(seq)==20:
-                        score=score_Seq(seq,matrix)
+                        score=self.score_Seq(seq,matrix)
                         out.write("{}\t{}\n".format(seq,score))
 
 class PlotHist():
-    def __init__(self,filename,outname):
-        threshold_list=[x/5.0 for x in range(-15,1)]
+    def __init__(self,filename,outname,scaled_value):
+        self.threshold_list=[x/5.0 for x in range(-15,1)]
         distanceHash=dict()
-        for T in threshold_list:
+        for T in self.threshold_list:
             distanceHash[T]=numpy.zeros([1,21])
         with open(filename, "r") as infile:
             while True:
@@ -95,31 +92,25 @@ class PlotHist():
                     break
                 dataline=line.rstrip().split()
                 for i,value in enumerate(dataline[1:]):
-                    distanceHash[threshold_list[i]][0,int(value)]+=1
-        heatmap=numpy.zeros([len(threshold_list),21])
-
-        for i,T in enumerate(threshold_list):
+                    distanceHash[self.threshold_list[i]][0,int(value)]+=1
+                    
+        heatmap=numpy.zeros([len(self.threshold_list),21])
+        scaledheatmap=numpy.zeros([len(self.threshold_list),21])
+        for i,T in enumerate(self.threshold_list):
             fullCount=numpy.sum(distanceHash[T])
-            print("standard scaling {}".format(fullCount))
+            #print("standard scaling {}".format(fullCount))
             for pos,n in enumerate(distanceHash[T][0,:]):
-                heatmap[i,pos]=n/fullCount
-        plot_heatmap(outname,heatmap)
-        writeTable.writeTable(outname.replace(".pdf",".table.txt"),heatmap,[x/5.0 for x in range(-15,1)])
-        plot_cum_heatmap(outname.replace(".pdf",".cumulative.pdf"),heatmap)
+                heatmap[i,pos]=n/float(fullCount)
+                scaledheatmap[i,pos]=n/float(scaled_value)
+        self.plot_heatmap(outname,heatmap)
+        writeTable(outname.replace(".pdf",".table.txt"),heatmap, self.threshold_list)
+        self.plot_cum_heatmap(outname.replace(".pdf",".cumulative.pdf"),heatmap)
 
-        heatmap=numpy.zeros([len(threshold_list),21])
+        self.plot_heatmap(outname.replace(".pdf",".scaled.pdf"),scaledheatmap)
+        writeTable(outname.replace(".pdf",".scaled.table.txt"),scaledheatmap, self.threshold_list)   
+        self.plot_cum_heatmap(outname.replace(".pdf",".scaled.cumulative.pdf"),scaledheatmap)
 
-        for i,T in enumerate(threshold_list):
-            fullCount=85149053#functional, uniq briney number
-            #fullCount=2452900000000#generated igor plots functional adjusted
-            print("briney scaling {}".format(fullCount))
-            for pos,n in enumerate(distanceHash[T][0,:]):
-                heatmap[i,pos]=n/fullCount
-        plot_heatmap(outname.replace(".pdf",".Briney_scale.pdf"),heatmap)
-        writeTable.writeTable(outname.replace(".pdf",".Briney_scale.table.txt"),heatmap,[x/5.0 for x in range(-15,1)])   
-        plot_cum_heatmap(outname.replace(".pdf",".Briney_scale.cumulative.pdf"),heatmap)
-
-        plot_legend("legend.pdf")
+        self.plot_legend(outname.replace(".pdf","legend.pdf"))
 
     def GenerateBins(self,data_list):
         bins=numpy.zeros([1,21])
@@ -163,12 +154,11 @@ class PlotHist():
                 if data==0:
                     color=[1,1,1]
                 else:
-                    color=color_lookup(data)
+                    color=self.color_lookup(data)
                 rect=plt.Rectangle((n-0.5,i-0.5),1,1,fc=color,ec="black")
                 ax.add_patch(rect)
-        ax.set_yticks(range(0,len([x/5.0 for x in range(-15,1)])))
-        ax.set_yticklabels(["{0:.2f}".format(x/5.0) for x in range(-15,1)])
-
+        ax.set_yticks(range(0,len(self.threshold_list)))
+        ax.set_yticklabels(["{0:.2f}".format(x) for x in self.threshold_list])
         ax.set_xticks(range(0,21))
         ax.grid(b=None)
         plt.grid(b=None)
@@ -176,7 +166,7 @@ class PlotHist():
         plt.ylabel("Matrix Threshold Value")
         plt.savefig(outpdf,bbox_inches='tight')
         plt.close("all")
-    def plot_cum_heatmap(outpdf,data):
+    def plot_cum_heatmap(self,outpdf,data):
         plt.clf()
         fig,ax=plt.subplots(figsize=(10,10))
         ax.axis('tight')
@@ -189,11 +179,11 @@ class PlotHist():
                 if cum_data==0:
                     color=[1,1,1]
                 else:
-                    color=color_lookup(cum_data)
+                    color=self.color_lookup(cum_data)
                 rect=plt.Rectangle((n-0.5,i-0.5),1,1,fc=color,ec="black")
                 ax.add_patch(rect)
-        ax.set_yticks(range(0,len([x/5.0 for x in range(-15,1)])))
-        ax.set_yticklabels(["{0:.2f}".format(x/5.0) for x in range(-15,1)])
+        ax.set_yticks(range(0,len(self.threshold_list)))
+        ax.set_yticklabels(["{0:.2f}".format(x) for x in self.threshold_list])
         ax.set_xticks(range(0,21))
         ax.set_xticklabels(["$\leq${}".format(x) for x in range(0,21)])
         ax.grid(b=None)
@@ -203,7 +193,7 @@ class PlotHist():
         plt.savefig(outpdf,bbox_inches='tight')
         plt.close("all")
 
-    def plot_legend(outpdf):
+    def plot_legend(self,outpdf):
         fig,ax=plt.subplots(figsize=(3,5))
         ax.axis('off')
         ax.set_ylim(-0.5,10.5)
@@ -214,7 +204,7 @@ class PlotHist():
                 color=[1,1,1]
                 ax.text(1.5,i+0.5,"Not Detected".format(data))
             else:
-                color=color_lookup(0.9/data)
+                color=self.color_lookup(0.9/data)
                 if i==8:
                     ax.text(1.5,i+0.5,"$\leq$ 1 in {:,d}".format(data))
                 else:
@@ -224,6 +214,19 @@ class PlotHist():
         plt.savefig(outpdf,bbox_inches='tight')
         plt.close("all")
 
+def writeTable(outname,data,Vect):#need to reverse the data
+    thresholdVect=Vect[::-1]
+    with open(outname,'w') as outfile:
+        for i,vec_thresh in enumerate(data[::-1]):
+            outfile.write("{}\t".format(thresholdVect[i]))
+            for n,values in enumerate(vec_thresh):
+                outfile.write("{:0.4e}\t".format(values))
+            outfile.write("\n")
+        outfile.write("\n")
+        outfile.write(" ")
+        for i in range(len(data[0])):
+            outfile.write("\t{}".format(i))
+        outfile.write("\n")
                         
 def parse_args():
     # Construct an argument parser
@@ -234,12 +237,28 @@ def parse_args():
     all_args.add_argument("-g","--gene",required=False,help="gene")
     all_args.add_argument("-s","--sequences",required=True,help="set of sequences")
     all_args.add_argument("-c","--cutoff",required=False,default=-0.2,type=float,help="cut off for a hit")
-    all_args.add_argument()
+    all_args.add_argument("-o","--pdfname",required=False,default=[],help="name of the final pdf file")
+    all_args.add_argument("--scale",required=False,default=85149053,type=int,help="value to scale the data by")
+    #scaled_value=85149053
     args = vars(all_args.parse_args())
     return args
 
 def main(args):
-    pass
+    
+    matrixfile=args["matrix"]
+    sequencefile=args["sequences"]
+    #cutoffvalue=args["cutoff"]
+    SDC=SeqDistCalc(sequencefile,matrixfile)
+
+    if args["pdfname"]:
+        fn,f_ext=os.path.splitext(args["pdfname"])
+        if not f_ext:
+            fn=fn+".pdf"
+        elif ".pdf" not in f_ext:
+            fn=args["pdfname"]+".pdf"
+        PlotHist(SDC.distfile,fn,args["scale"])
+    else:
+        PlotHist(SDC.distfile,SDC.distfile.replace(".txt","").replace(".dist",".pdf"),args["scale"])
 
 if __name__=="__main__":
     args=parse_args()
