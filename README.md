@@ -13,6 +13,10 @@ Generate_everything.py
 histogram.r
 parse_data.R
 
+# findCDR
+
+C++ code for find the CDR3 logo from a set. This code is depreciated for other analysis code that is more flexible.
+
 
 # bash programs
 
