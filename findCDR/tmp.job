@@ -6,21 +6,6 @@
 #SBATCH --ntasks-per-node=1
 #####SBATCH --exclude=dcc-dhvi-[01-03]
 
-#if (( $# < 2 )); then
-#	numbSeq=750000000
-#else
-#	numbSeq=${2}
-#fi
-
-
-
-#for file in $(find . -iname "xset*generated_seqs_noerr.csv"); 
-#do 
-#echo ${file}; 
-#marker=$(head /dev/urandom | tr -dc A-Z0-9 |head -c 4;echo '')
-#sed "s|^|>seq${marker}-|" ${file} | cut -f 1,2 -d "," | tr ";" "\n" >> full_seqs.fasta; 
-#done
-
 date
 wc -l full_seqs.fasta
 date

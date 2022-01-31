@@ -1,0 +1,34 @@
+#!/bin/bash
+#SBATCH --job-name=igor_runs
+#SBATCH --ntasks=1
+#SBATCH --error=slurm-%j.err
+#SBATCH --mem=8G
+#SBATCH --partition=dhvi
+#SBATCH --ntasks-per-node=1
+#SBATCH --exclude=dcc-dhvi-[01-03]
+
+if (( $# < 1 ))
+then
+	label=$(head /dev/urandom | tr -dc A-Z0-9 |head -c 4;echo '')
+else
+	label=${1}
+fi
+
+if (( $# < 2 )); then
+	numbSeq=500000000
+else
+	numbSeq=${2}
+fi
+
+
+date
+#igor  -batch seq1 -species human -chain heavy_naive -generate 100000000 -set_wd /datacommons/dhvi/jsmb/seq1 --noerr --CDR3 --name set1
+igor  -batch seq${label} -species human -chain heavy_naive -generate ${numbSeq} --noerr --CDR3 --name set$1 -set_wd /work/jsmb/seq
+
+dir=$(pwd)/seq/seq${label}_generated
+
+~/findCDR/findCDR -i ${dir}/generated_seqs_noerr_CDR3_info.fasta -o cdrset_${label}.txt -s ~/findCDR/seq_logo.txt -nt 
+
+rm -r ${dir}
+
+date
